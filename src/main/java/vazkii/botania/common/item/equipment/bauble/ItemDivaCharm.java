@@ -55,39 +55,44 @@ public class ItemDivaCharm extends ItemBauble implements IManaUsingItem, IBauble
 	@SubscribeEvent
 	public void onEntityDamaged(LivingHurtEvent event) {
 		if (event.getSource().getImmediateSource() instanceof EntityPlayer
-			&& event.getEntityLiving() instanceof EntityLiving
-			&& !event.getEntityLiving().world.isRemote
-			&& event.getEntityLiving().isNonBoss()
-			&& Math.random() < 0.6F) {
+				&& event.getEntityLiving() instanceof EntityLiving
+				&& !event.getEntityLiving().world.isRemote
+				&& event.getEntityLiving().isNonBoss()
+				&& Math.random() < 0.6F) {
 			Runnable lambda = () -> {
 				EntityLiving target = (EntityLiving) event.getEntityLiving();
 				EntityPlayer player = (EntityPlayer) event.getSource().getImmediateSource();
 				Botania.LOGGER.debug("ImmediateSource : " + player);
-				if(player != null) {
-					ItemStack amulet = BaublesApi.getBaublesHandler(player).getStackInSlot(6);
+				
+				if(player == null) {
+					Botania.LOGGER.debug("ItemDivaCharm.onEntityDamaged: null ImmediateSource player...");
+					return;
+				}
+				
+				ItemStack amulet = BaublesApi.getBaublesHandler(player).getStackInSlot(6);
 
-					if(!amulet.isEmpty() && amulet.getItem() == this) {
-						final int cost = 250;
-						if(ManaItemHandler.requestManaExact(amulet, player, cost, false)) {
-							final int range = 20;
+				if(!amulet.isEmpty() && amulet.getItem() == this) {
+					final int cost = 250;
+					if(ManaItemHandler.requestManaExact(amulet, player, cost, false)) {
+						final int range = 20;
 
-							List mobs = player.world.getEntitiesWithinAABB(Entity.class, new AxisAlignedBB(target.posX - range, target.posY - range, target.posZ - range, target.posX + range, target.posY + range, target.posZ + range), Predicates.instanceOf(IMob.class));
-							if(mobs.size() > 1) {
-								if(SubTileHeiseiDream.brainwashEntity(target, (List<IMob>) mobs)) {
-									target.heal(target.getMaxHealth());
-									target.isDead = false;
-									if(target instanceof EntityCreeper)
-										((EntityCreeper) event.getEntityLiving()).timeSinceIgnited = 2;
+						List mobs = player.world.getEntitiesWithinAABB(Entity.class, new AxisAlignedBB(target.posX - range, target.posY - range, target.posZ - range, target.posX + range, target.posY + range, target.posZ + range), Predicates.instanceOf(IMob.class));
+						if(mobs.size() > 1) {
+							if(SubTileHeiseiDream.brainwashEntity(target, (List<IMob>) mobs)) {
+								target.heal(target.getMaxHealth());
+								target.isDead = false;
+								if(target instanceof EntityCreeper)
+									((EntityCreeper) event.getEntityLiving()).timeSinceIgnited = 2;
 
-									ManaItemHandler.requestManaExact(amulet, player, cost, true);
-									player.world.playSound(null, player.posX, player.posY, player.posZ, ModSounds.divaCharm, SoundCategory.PLAYERS, 1F, 1F);
-									PacketHandler.sendToNearby(target.world, target, new PacketBotaniaEffect(PacketBotaniaEffect.EffectType.DIVA_EFFECT, target.posX, target.posY, target.posZ, target.getEntityId()));
-								}
+								ManaItemHandler.requestManaExact(amulet, player, cost, true);
+								player.world.playSound(null, player.posX, player.posY, player.posZ, ModSounds.divaCharm, SoundCategory.PLAYERS, 1F, 1F);
+								PacketHandler.sendToNearby(target.world, target, new PacketBotaniaEffect(PacketBotaniaEffect.EffectType.DIVA_EFFECT, target.posX, target.posY, target.posZ, target.getEntityId()));
 							}
 						}
 					}
 				}
-				
+
+
 			};
 
 			// Have to delay a tick because setAttackTarget(player) is called *after* the event fires, and we want to get rid of that
